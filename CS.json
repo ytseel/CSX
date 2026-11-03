@@ -1,0 +1,9 @@
+{
+  "name": "VegaMovies",
+  "description": "VegaMovies CloudStream extension",
+  "iconUrl": "https://raw.githubusercontent.com/ytseel/CSX/master/VegaMovies/icon.jpg",
+  "manifestVersion": 2,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/ytseel/CSX/builds/plugins.json"
+  ]
+}
