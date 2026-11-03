@@ -14,7 +14,7 @@ import org.json.JSONObject
 import java.net.URI
 
 open class VegaMoviesProvider : MainAPI() {
-    override var mainUrl = "https://vegamovies.lease/"
+    override var mainUrl = "https://1vegamovies.asia"
     override var name = "VegaMovies"
     override val hasMainPage = true
     override var lang = "hi"
