@@ -22,5 +22,5 @@ cloudstream {
         "Anime"
     )
 
-    iconUrl = "https://github.com/SaurabhKaperwan/CSX/raw/refs/heads/master/VegaMovies/icon.jpg"
+    iconUrl = "https://raw.githubusercontent.com/ytseel/CSX/master/VegaMovies/icon.jpg"
 }
