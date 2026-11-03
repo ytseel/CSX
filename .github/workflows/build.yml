@@ -1,22 +1,23 @@
-name: Build
+name: Build VegaMovies
 
-#Concurrency scoped to the specific branch/ref, not global
 concurrency:
-  group: build-${{ github.ref }}
+  group: vegamovies-build-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  #Allows you to manually trigger the workflow from the Actions tab
   workflow_dispatch:
-
   push:
     branches:
       - master
-      - main
-    paths-ignore:
-      - '*.md'
+    paths:
+      - "VegaMovies/**"
+      - "settings.gradle.kts"
+      - "build.gradle.kts"
+      - "gradle/**"
+      - "gradle.properties"
+      - "gradlew"
+      - ".github/workflows/build.yml"
 
-#Grant permission to push changes back to the repo
 permissions:
   contents: write
 
@@ -24,72 +25,70 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source
+      - name: Checkout source
         uses: actions/checkout@v6.0.2
         with:
-          path: "src"
+          path: src
 
-      - name: Checkout Builds Branch
+      - name: Checkout builds branch
         uses: actions/checkout@v6.0.2
         with:
-          ref: "builds"
-          path: "builds"
+          ref: builds
+          path: builds
 
-      - name: Clean old builds
-        run: rm $GITHUB_WORKSPACE/builds/*.cs3 || true
-
-      - name: Setup JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v5.2.0
         with:
-          distribution: "adopt"
+          distribution: adopt
           java-version: 17
 
-      - name: Setup Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v4.0.1
         with:
-          packages: 'platform-tools'
+          packages: platform-tools
 
-      - name: Access Secrets & Create Properties
-        env:
-          SIMKL_API: ${{ secrets.SIMKL_API }}
-          TMDB_KEY: ${{ secrets.TMDB_KEY }}
-          CASTLE_KEY: ${{ secrets.CASTLE_KEY }}
-          MOVIEBLAST_TOKEN: ${{ secrets.MOVIEBLAST_TOKEN }}
-          MOVIEBLAST_API: ${{ secrets.MOVIEBLAST_API }}
-          MOVIEBLAST_KEY: ${{ secrets.MOVIEBLAST_KEY }}
-
+      - name: Build VegaMovies only
+        working-directory: src
         run: |
-          cd $GITHUB_WORKSPACE/src
-          # Create file if it doesn't exist
-          touch local.properties
-          echo "SIMKL_API=$SIMKL_API" >> local.properties
-          echo "TMDB_KEY=$TMDB_KEY" >> local.properties
-          echo "CASTLE_KEY=$CASTLE_KEY" >> local.properties
-          echo "MOVIEBLAST_TOKEN=$MOVIEBLAST_TOKEN" >> local.properties
-          echo "MOVIEBLAST_API=$MOVIEBLAST_API" >> local.properties
-          echo "MOVIEBLAST_KEY=$MOVIEBLAST_KEY" >> local.properties
-
-      - name: Build Plugins
-        run: |
-          cd $GITHUB_WORKSPACE/src
           chmod +x gradlew
-          ./gradlew make makePluginsJson
+          ./gradlew --no-daemon make makePluginsJson
 
-          # Copy files (fail safely if directory doesn't exist)
-          cp **/build/*.cs3 $GITHUB_WORKSPACE/builds/ || echo "No .cs3 files found"
-          cp build/plugins.json $GITHUB_WORKSPACE/builds/ || echo "No plugins.json found"
+          test -f VegaMovies/build/VegaMovies.cs3
+          test -f build/plugins.json
+          jq -e 'length == 1 and .[0].name == "VegaMovies"' build/plugins.json >/dev/null
 
-      - name: Push builds
+      - name: Publish repository files
+        env:
+          SOURCE_SHA: ${{ github.sha }}
         run: |
-          cd $GITHUB_WORKSPACE/builds
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add .
+          set -euo pipefail
 
-          # Only commit/push if there are changes
-          if [[ -n $(git status -s) ]]; then
-            git commit --amend -m "Build $GITHUB_SHA" || git commit -m "Build $GITHUB_SHA"
-            git push --force
+          # The builds branch is a distribution branch, not a source-code mirror.
+          find "$GITHUB_WORKSPACE/builds" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+
+          cp "$GITHUB_WORKSPACE/src/VegaMovies/build/VegaMovies.cs3" "$GITHUB_WORKSPACE/builds/"
+          cp "$GITHUB_WORKSPACE/src/build/plugins.json" "$GITHUB_WORKSPACE/builds/plugins.json"
+
+          cat > "$GITHUB_WORKSPACE/builds/CS.json" <<'EOF'
+          {
+            "name": "VegaMovies",
+            "description": "VegaMovies CloudStream extension",
+            "iconUrl": "https://raw.githubusercontent.com/ytseel/CSX/master/VegaMovies/icon.jpg",
+            "manifestVersion": 2,
+            "pluginLists": [
+              "https://raw.githubusercontent.com/ytseel/CSX/builds/plugins.json"
+            ]
+          }
+          EOF
+
+          cd "$GITHUB_WORKSPACE/builds"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Build VegaMovies ${SOURCE_SHA}"
+            git push origin HEAD:builds
           else
-            echo "No changes to push"
+            echo "No build output changes to publish."
           fi
