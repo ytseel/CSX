@@ -9,7 +9,7 @@
             "megix"
         ],
         "description": "Includes LuxMovies, Rogmovies",
-        "fileSize": 41646,
+        "fileSize": 41648,
         "repositoryUrl": "https://github.com/ytseel/CSX",
         "language": "hi",
         "tvTypes": [
@@ -20,6 +20,6 @@
         ],
         "iconUrl": "https://raw.githubusercontent.com/ytseel/CSX/master/VegaMovies/icon.jpg",
         "apiVersion": 1,
-        "fileHash": "sha256-6fa95b31950621595c5fb0ef1e2805de2655137337d2142976c059203b20e3d0"
+        "fileHash": "sha256-15da9e39ef199fe4c0a69b83ef405effcd202a5ca3301bcc4f15aa0610f98852"
     }
 ]
